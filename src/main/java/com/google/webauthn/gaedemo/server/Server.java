@@ -29,7 +29,6 @@ import com.google.webauthn.gaedemo.storage.SessionData;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.credential.CredentialModel;
-import org.keycloak.models.ClientSessionModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
@@ -39,6 +38,7 @@ import java.util.*;
 import java.util.logging.Logger;
 
 import br.com.experimental.keycloak.authenticator.WebauthnCredentialProvider;
+import org.keycloak.sessions.AuthenticationSessionModel;
 
 public abstract class Server {
 
@@ -47,7 +47,7 @@ public abstract class Server {
     public static final String U2F_SESSION_DATA = "u2f-session-data";
 
     public static void verifySessionAndChallenge(AuthenticatorResponse assertionResponse,
-                                                 ClientSessionModel authenticationSession,
+                                                 AuthenticationSessionModel authenticationSession,
                                                  String sessionId) throws ResponseException {
         Log.info("-- Verifying provided session and challenge data --");
         // TODO: when it's calling from an Android application via Endpoints API, the session ID
@@ -87,7 +87,7 @@ public abstract class Server {
         }
 
         try {
-            verifySessionAndChallenge(assertionResponse, contexto.getClientSession(), sessionId);
+            verifySessionAndChallenge(assertionResponse, contexto.getAuthenticationSession(), sessionId);
         } catch (ResponseException e1) {
             throw new ResponseException("Unable to verify session and challenge data");
         }
@@ -185,6 +185,10 @@ public abstract class Server {
         String rpId = Iterables.get(Splitter.on(':').split(host), 0);
         String rpName = contexto.getRealm().getName();
 
+        Log.info("host: " + host);
+        Log.info("rpId: " + rpId);
+        Log.info("rpName: " + rpName);
+
         PublicKeyCredentialCreationOptions options =
                 new PublicKeyCredentialCreationOptions(user.getUsername(), user.getId(), rpId, rpName);
 
@@ -203,7 +207,7 @@ public abstract class Server {
         JsonObject optionsJson = options.getJsonObject();
         optionsJson.add("session", sessionJson);
 
-        contexto.getClientSession().setUserSessionNote(U2F_SESSION_DATA, sessionJson.toString());
+        contexto.getAuthenticationSession().setUserSessionNote(U2F_SESSION_DATA, sessionJson.toString());
 
         return optionsJson;
 
@@ -254,10 +258,13 @@ public abstract class Server {
         PublicKeyCredential cred = new PublicKeyCredential(credentialIdRecoded, type,
                 BaseEncoding.base64Url().decode(credentialId), attestation);
 
-        String domain = contexto.getActionUrl().getHost();
         String host = contexto.getActionUrl().getHost();
         String rpId = Iterables.get(Splitter.on(':').split(host), 0);
-        //String rpName = contexto.getRealm().getName();
+        String domain = rpId; // contexto.getActionUrl().getHost();
+
+        Log.info("host: " + host);
+        Log.info("rpId: " + rpId);
+        Log.info("domain: " + domain);
 
         switch (cred.getAttestationType()) {
             case FIDOU2F:
@@ -347,8 +354,11 @@ public abstract class Server {
 
             //String rpId = contexto.getHttpRequest().getUri().getBaseUri().getHost();
             //String rpId = contexto.getActionUrl().getHost();
-            String host = contexto.getActionUrl().getHost();
+            String host = contexto.getActionUrl("").getHost();
             String rpId = Iterables.get(Splitter.on(':').split(host), 0);
+
+            Log.info("host: " + host);
+            Log.info("rpId: " + rpId);
 
             PublicKeyCredentialRequestOptions assertion = new PublicKeyCredentialRequestOptions(rpId);
             SessionData session = new SessionData(assertion.challenge, rpId);
@@ -360,7 +370,7 @@ public abstract class Server {
             assertionJson = assertion.getJsonObject();
             assertionJson.add("session", sessionJson);
 
-            contexto.getClientSession().setUserSessionNote(U2F_SESSION_DATA, sessionJson.toString());
+            contexto.getAuthenticationSession().setUserSessionNote(U2F_SESSION_DATA, sessionJson.toString());
 
         } catch(Exception e) {
             e.printStackTrace();

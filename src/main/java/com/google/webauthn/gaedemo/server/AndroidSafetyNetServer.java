@@ -65,7 +65,7 @@ public class AndroidSafetyNetServer extends Server {
     }
 
     try {
-      verifySessionAndChallenge(attResponse, contexto.getClientSession() , session);
+      verifySessionAndChallenge(attResponse, contexto.getAuthenticationSession() , session);
     } catch (ResponseException e1) {
       throw new Exception("Unable to verify session and challenge data");
     }
