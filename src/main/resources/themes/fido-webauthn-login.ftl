@@ -28,8 +28,8 @@
 
 
 		const requestOptions = {};
-		parameters = ${request};
-		_parameters = ${request};
+		parameters = ${request?no_esc};
+		_parameters = ${request?no_esc};
 
 		requestOptions.challenge = strToBin(parameters.challenge);
 		//if ($('#customTimeout').value != '') {
