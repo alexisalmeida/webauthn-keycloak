@@ -437,15 +437,22 @@ public class WebauthnLogin implements Authenticator {
             String data = formData.getFirst("data");
             String session = formData.getFirst("session");
 
-            CredentialModel savedCredential = Server.finishAssertion(context, data, session);
+            if (data.equalsIgnoreCase("new-register")) {
+                 context.getUser().addRequiredAction(WebauthnRequiredActionProviderFactory.ID);
 
-            String handle = savedCredential.getId();
+                 context.success();
+            } else {
+                CredentialModel savedCredential = Server.finishAssertion(context, data, session);
 
-            logger.info("handle: " + handle);
+                String handle = savedCredential.getId();
 
-            context.getClientSession().setUserSessionNote(atrib2f_fido_login, "true");
+                logger.info("handle: " + handle);
 
-            context.success();
+                context.getAuthenticationSession().setUserSessionNote(atrib2f_fido_login, "true");
+
+                context.success();
+
+            }
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);

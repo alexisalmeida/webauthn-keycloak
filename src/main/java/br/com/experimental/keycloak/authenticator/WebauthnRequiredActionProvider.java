@@ -38,13 +38,14 @@ public class WebauthnRequiredActionProvider implements RequiredActionProvider {
 
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
-        //logger.debugv("Sending registration, session: {0}", context.getAuthenticationSession().getParentSession().getId());
-        logger.info(String.format("Sending registration, session: {%s}", context.getClientSession().getId()));
+        logger.debugv("Sending registration, session: {0}", context.getAuthenticationSession().getParentSession().getId());
+        //logger.info(String.format("Sending registration, session: {%s}", context.getAuthenticationSession().getId()));
 
         try {
 
             JsonObject optionsJson = Server.startRegistration(context);
 
+            logger.info("Base URI: " + context.getSession().getContext().getUri().getBaseUri());
             Response challenge = context.form()
                     //.setAttribute("url", new UrlBean(context.getRealm(), context.getSession().themes().getTheme(Theme.Type.LOGIN), context.getSession().getContext().getUri().getBaseUri(), context.getActionUrl()))
                     .setAttribute("url", new UrlBean(context.getRealm(), null,
@@ -60,7 +61,7 @@ public class WebauthnRequiredActionProvider implements RequiredActionProvider {
 
     @Override
     public void processAction(RequiredActionContext context) {
-        logger.info(String.format("Finish registration, session: {%s}", context.getClientSession().getId()));
+        logger.info(String.format("Finish registration, session: {%s}", context.getAuthenticationSession().getParentSession().getId()));
 
         try {
             MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
@@ -70,7 +71,7 @@ public class WebauthnRequiredActionProvider implements RequiredActionProvider {
 
             Server.finishRegistration(context, data, session);
 
-            context.getClientSession().setUserSessionNote(atrib2f_fido_register, "true");
+            context.getAuthenticationSession().setUserSessionNote(atrib2f_fido_register, "true");
 
             context.success();
         } catch (Exception e) {
