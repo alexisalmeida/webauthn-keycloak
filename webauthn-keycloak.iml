@@ -11,40 +11,40 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
-      <library name="Maven: org.keycloak:keycloak-core:2.5.4.Final">
+      <library name="Maven: org.keycloak:keycloak-core:3.4.3.Final">
         <CLASSES>
-          <root url="jar://C:/keycloak-2.5.4.Final/modules/system/layers/keycloak/org/keycloak/keycloak-core/main/keycloak-core-2.5.4.Final.jar!/" />
+          <root url="jar://C:/keycloak-3.4.3.Final/modules/system/layers/keycloak/org/keycloak/keycloak-core/main/keycloak-core-3.4.3.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: org.keycloak:keycloak-services:2.5.4.Final">
+      <library name="Maven: org.keycloak:keycloak-services:3.4.3.Final">
         <CLASSES>
-          <root url="jar://C:/keycloak-2.5.4.Final/modules/system/layers/keycloak/org/keycloak/keycloak-services/main/keycloak-services-2.5.4.Final.jar!/" />
+          <root url="jar://C:/keycloak-3.4.3.Final/modules/system/layers/keycloak/org/keycloak/keycloak-services/main/keycloak-services-3.4.3.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.keycloak:keycloak-common:2.5.4.Final" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bouncycastle:bcprov-jdk15on:1.52" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bouncycastle:bcpkix-jdk15on:1.52" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.keycloak:keycloak-common:3.4.3.Final" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bouncycastle:bcprov-jdk15on:1.56" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.bouncycastle:bcpkix-jdk15on:1.56" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.jboss.logging:jboss-logging:3.1.4.GA" level="project" />
     <orderEntry type="module-library">
-      <library name="Maven: org.keycloak:keycloak-server-spi-private:2.5.4.Final">
+      <library name="Maven: org.keycloak:keycloak-server-spi-private:3.4.3.Final">
         <CLASSES>
-          <root url="jar://C:/keycloak-2.5.4.Final/modules/system/layers/keycloak/org/keycloak/keycloak-server-spi-private/main/keycloak-server-spi-private-2.5.4.Final.jar!/" />
+          <root url="jar://C:/keycloak-3.4.3.Final/modules/system/layers/keycloak/org/keycloak/keycloak-server-spi-private/main/keycloak-server-spi-private-3.4.3.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: org.keycloak:keycloak-server-spi:2.5.4.Final">
+      <library name="Maven: org.keycloak:keycloak-server-spi:3.4.3.Final">
         <CLASSES>
-          <root url="jar://C:/keycloak-2.5.4.Final/modules/system/layers/keycloak/org/keycloak/keycloak-server-spi/main/keycloak-server-spi-2.5.4.Final.jar!/" />
+          <root url="jar://C:/keycloak-3.4.3.Final/modules/system/layers/keycloak/org/keycloak/keycloak-server-spi/main/keycloak-server-spi-3.4.3.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -53,16 +53,16 @@
     <orderEntry type="module-library">
       <library name="Maven: javax.ws.rs:javax.ws.rs-api:2.0">
         <CLASSES>
-          <root url="jar://C:/keycloak-2.5.4.Final/modules/system/layers/base/javax/ws/rs/api/main/jboss-jaxrs-api_2.0_spec-1.0.0.Final.jar!/" />
+          <root url="jar://C:/keycloak-3.4.3.Final/modules/system/layers/base/javax/ws/rs/api/main/jboss-jaxrs-api_2.0_spec-1.0.0.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: org.jboss.resteasy:resteasy-jaxrs:3.0.14">
+      <library name="Maven: org.jboss.resteasy:resteasy-jaxrs:3.0.24.Final">
         <CLASSES>
-          <root url="jar://C:/keycloak-2.5.4.Final/modules/system/layers/base/org/jboss/resteasy/resteasy-jaxrs/main/resteasy-jaxrs-3.0.14.Final.jar!/" />
+          <root url="jar://C:/keycloak-3.4.3.Final/modules/system/layers/base/org/jboss/resteasy/resteasy-jaxrs/main/resteasy-jaxrs-3.0.24.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
