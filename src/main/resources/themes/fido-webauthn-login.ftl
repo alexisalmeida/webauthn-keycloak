@@ -121,7 +121,7 @@
         <p>LOGIN WEBAUTHN</p>
 				
 		<p>
-		<a href='javascript:novoRegistro()'>Novo Registro</a>
+		<a href='javascript:novoRegistro()'>New Register</a>
 		</p>
 		
         <form action="${url.loginAction}" class="${properties.kcFormClass!}" id="kc-u2f-login-form" method="post">
