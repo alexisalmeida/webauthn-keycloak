@@ -5,9 +5,10 @@
     <#elseif section = "header">
         WEBAUTHN
     <#elseif section = "form">
+        <!--<script src="${url.resourcesPath}/js/u2f-api-1.1.js"></script>-->
 
         <script>
-
+			////////////////
 			const $ = q => {
 			  return document.querySelector(q);
 			};
@@ -107,11 +108,22 @@
 				return cred;
 			  });
 			}
+			
+			function novoRegistro() {
+				document.getElementById('data').value = "new-register";
+				document.getElementById('kc-u2f-login-form').submit();
+			}
+
+			/////////////
 
         </script>
 
         <p>LOGIN WEBAUTHN</p>
-
+				
+		<p>
+		<a href='javascript:novoRegistro()'>Novo Registro</a>
+		</p>
+		
         <form action="${url.loginAction}" class="${properties.kcFormClass!}" id="kc-u2f-login-form" method="post">
             <input type="hidden" name="data" id="data"/>
             <input type="hidden" name="session" id="session"/>

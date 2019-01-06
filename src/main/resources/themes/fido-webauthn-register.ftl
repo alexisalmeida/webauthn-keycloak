@@ -8,6 +8,7 @@
         <!--<script src="${url.resourcesPath}/js/u2f-api-1.1.js"></script>-->
 
         <script>
+		//////
 			const $ = q => {
 			  return document.querySelector(q);
 			};
@@ -94,7 +95,36 @@
 				console.log(err.toString());
 				alert("An error occurred during Make Credential operation: " + err.toString());
 			  });
+		///////
+			/*
+            var request = ${request};
+            setTimeout(function() {
+                u2f.register(
+                    request.appId,
+                    request.registerRequests,
+                    request.registeredKeys,
+                    function(data) {
+                        var form = document.getElementById('kc-u2f-settings-form');
+                        var reg = document.getElementById('tokenResponse');
+                        if(data.errorCode) {
+                            switch (data.errorCode) {
+                                case 4:
+                                    alert("This device is already registered.");
+                                    break;
 
+                                default:
+                                    alert("U2F failed with error: " + data.errorCode);
+                            }
+                        } else {
+                            reg.value=JSON.stringify(data);
+                            form.submit();
+                        }
+                    }
+                );
+            }, 1000);
+			
+			*/
+			
 			
 			function strToBin(str) {
 				return Uint8Array.from(atob(str), c => c.charCodeAt(0));
