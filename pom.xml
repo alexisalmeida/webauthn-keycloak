@@ -30,9 +30,7 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
-            <version>${keycloak.version}</version>
-            <systemPath>${keycloak.path}/modules/system/layers/keycloak/org/keycloak/keycloak-core/main/keycloak-core-${keycloak.version}.jar</systemPath>
-            <scope>system</scope>
+            <version>[4.6.0,)</version>
         </dependency>
 
         <dependency>
