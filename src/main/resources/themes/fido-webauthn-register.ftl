@@ -28,8 +28,8 @@
 
 		const makeCredentialOptions = {};
 		
-		options = ${request};
-		_options = ${request};
+		options = ${request?no_esc};
+		_options = ${request?no_esc};
 
 		makeCredentialOptions.rp = options.rp;
 		makeCredentialOptions.user = options.user;
