@@ -38,6 +38,7 @@ public class WebauthnLogin implements Authenticator {
     public void authenticate(AuthenticationFlowContext context) {
         this.contexto = context;
         this.session = context.getSession();
+
         Map<String, String> config = context.getAuthenticatorConfig().getConfig();
 
         try {
@@ -386,6 +387,8 @@ public class WebauthnLogin implements Authenticator {
 
         return configModel;
     }
+
+
 
     public void action(AuthenticationFlowContext context) {
         try {

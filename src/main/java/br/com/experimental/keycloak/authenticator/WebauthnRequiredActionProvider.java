@@ -18,14 +18,22 @@
 package br.com.experimental.keycloak.authenticator;
 
 import com.google.gson.JsonObject;
+import com.google.webauthn.gaedemo.server.AdvancedOptions;
 import com.google.webauthn.gaedemo.server.Server;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.forms.login.freemarker.model.UrlBean;
+import org.keycloak.models.AuthenticationExecutionModel;
+import org.keycloak.models.AuthenticatorConfigModel;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import java.util.List;
+
+import static br.com.experimental.keycloak.authenticator.WebauthnLoginFactory.*;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
@@ -42,8 +50,17 @@ public class WebauthnRequiredActionProvider implements RequiredActionProvider {
         //logger.info(String.format("Sending registration, session: {%s}", context.getAuthenticationSession().getId()));
 
         try {
+            AuthenticatorConfigModel configModel = getConfig(context.getSession(), WebauthnLoginFactory.PROVIDER_ID);
+            logger.info("config: " + configModel);
+            AdvancedOptions advancedOptions = new AdvancedOptions();
 
-            JsonObject optionsJson = Server.startRegistration(context);
+            advancedOptions.setConveyancePreference(configModel.getConfig().get(CONVEYANCE_PREFERENCE));
+            advancedOptions.setUserVerification(configModel.getConfig().get(USER_VERIFICATION));
+            advancedOptions.setAttachmentType(configModel.getConfig().get(ATTACHMENT_TYPE));
+            advancedOptions.setExcludeCredentials(Boolean.getBoolean(configModel.getConfig().get(EXCLUDE_CREDENTIALS)));
+            advancedOptions.setRequireResidentKey(Boolean.getBoolean(configModel.getConfig().get(REQUIRE_RESIDENT_KEY)));
+
+            JsonObject optionsJson = Server.startRegistration(context, advancedOptions);
 
             logger.info("Base URI: " + context.getSession().getContext().getUri().getBaseUri());
             Response challenge = context.form()
@@ -85,6 +102,40 @@ public class WebauthnRequiredActionProvider implements RequiredActionProvider {
 
     @Override
     public void close() {
+    }
+
+    private AuthenticatorConfigModel getConfig(KeycloakSession session, String providerId) {
+        logger.info("Getting config for: " + providerId);
+        AuthenticatorConfigModel configModel = null;
+
+        RealmModel realm = session.getContext().getRealm();
+        String flowId = realm.getBrowserFlow().getId();
+
+        return getConfig(realm, flowId, providerId);
+
+    }
+
+    private AuthenticatorConfigModel getConfig(RealmModel realm, String flowId, String providerId) {
+        logger.info("Getting config for: " + flowId);
+
+        AuthenticatorConfigModel configModel = null;
+
+        List<AuthenticationExecutionModel> laem = realm.getAuthenticationExecutions(flowId);
+
+        for (AuthenticationExecutionModel aem : laem) {
+            logger.info("aem: " + String.format("%s, %s, %s, %s", aem.getFlowId(), aem.getId(),
+                    aem.isEnabled(),aem.isAuthenticatorFlow()));
+            if (aem.isAuthenticatorFlow()) {
+                logger.info("flow: " + aem.getFlowId());
+                configModel = getConfig(realm, aem.getFlowId(), providerId);
+                if (configModel!= null) return configModel;
+            } else if (aem.getAuthenticator() != null && aem.getAuthenticator().equals(providerId)) {
+                logger.info("authenticator: " + aem.getAuthenticator());
+                configModel = realm.getAuthenticatorConfigById(aem.getAuthenticatorConfig());
+                break;
+            }
+        }
+        return configModel;
     }
 
 }

@@ -12,16 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static org.keycloak.provider.ProviderConfigProperty.BOOLEAN_TYPE;
 import static org.keycloak.provider.ProviderConfigProperty.LIST_TYPE;
 import static org.keycloak.provider.ProviderConfigProperty.STRING_TYPE;
 
 public class WebauthnLoginFactory implements AuthenticatorFactory {
-
     private Logger logger = Logger.getLogger(this.getClass());
 
     static final String PROVIDER_ID = "webauthn-login";
-    private final WebauthnLogin SINGLETON = new WebauthnLogin();
 
+    private final WebauthnLogin SINGLETON = new WebauthnLogin();
     static final String SKIP = "skip";
     static final String FORCE = "force";
     static final String WAUTHN_CONTROL_USER_ATTRIBUTE = "u2fControlAttribute";
@@ -32,6 +32,11 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
     static final String FORCE_WAUTHN_FOR_CLIENT = "forceU2fForClient";
     static final String FORCE_WAUTHN_FOR_CLIENT_EXCEPTION = "forceU2fClientException";
 
+    static final String CONVEYANCE_PREFERENCE = "conveyancePreference";
+    static final String USER_VERIFICATION = "userVerification";
+    static final String ATTACHMENT_TYPE = "attachmentType";
+    static final String EXCLUDE_CREDENTIALS = "excludeCredentials";
+    static final String REQUIRE_RESIDENT_KEY = "requireResidentKey";
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
     private static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
@@ -40,69 +45,109 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
             AuthenticationExecutionModel.Requirement.DISABLED};
 
     static {
-        String msg = "Lista de clientes para os quais será solicitado o U2F";
-
         ProviderConfigProperty property;
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
         property.setName(FORCE_WAUTHN_FOR_CLIENT);
-        property.setLabel("Reaquire Webauthn for clients");
+        property.setLabel("Requires Webauthn for clients");
         property.setHelpText("Webauthn will be required for clients in the list (comma separated). " +
                 "Use * for all clients. " +
-                "If you want to omit a specific client, please enter it preceded by a \"-\" ");
+                "If you want to omit a specific client, please enter it preceded by a \"-\".");
         property.setDefaultValue("");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
         property.setName(FORCE_WAUTHN_FOR_CLIENT_EXCEPTION);
-        property.setLabel("U2F exceção para clientes");
-        property.setHelpText("O U2F não será exigido para os clientes da lista (separado por vírgula).");
+        property.setLabel("Requires Webauthn except for clients in the list");
+        property.setHelpText("Webauthn will be required for users who has Webauthn configured, except if clientId" +
+                " is in the list.");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
         property.setName(WAUTHN_CONTROL_USER_ATTRIBUTE);
-        property.setLabel("Atributo do Usuário");
-        property.setHelpText("O nome do atributo que controla o uso do U2F. " +
-                "Se o valor do atributo é 'force', então o U2F é exigido. " +
-                "Se o valor é 'skip', o U2F é ignorado. Para outros valores essa verificação é ignorada.");
+        property.setLabel("User attribute");
+        property.setHelpText("Attribute that controls webauthn use. " +
+                "If attribute value is 'force', Webauthn is required. " +
+                "If value is 'skip', Webauthn is ignored.");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
         property.setName(FORCE_WAUTHN_ROLE);
-        property.setLabel("U2F para as Roles");
-        property.setHelpText("O U2F será exigido para as Roles listadas. Use * para todas as Roles." +
-                "Caso deseje excluir uma role, prefixe-a com -.");
+        property.setLabel("Webauthn for Roles");
+        property.setHelpText("Webauthn will be required for Roles in the list. Use * for all of the Roles." +
+                "If you want to omit a specific role, please enter it preceded by a \"-\".");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
         property.setName(SKIP_WAUTHN_FOR_HTTP_HEADER);
-        property.setLabel("Dispensa U2F pelo Header");
-        property.setHelpText("O U2F é dispensado se um header do request HTTP atende um determinado padrão." +
-                "Pode ser usado para especificar redes confiáveis via: X-Forwarded-Host: (1.2.3.4|1.2.3.5)." +
-                "Nesse caso os requests de 1.2.3.4 e 1.2.3.5 são de uma fonte confiável.");
+        property.setLabel("Does not require Webauthn by Header");
+        property.setHelpText("Webauthn is not required if a HTTP header has a specifc pattern." +
+                "Can be used to specify trusted networks via: X-Forwarded-Host: (1.2.3.4|1.2.3.5)." +
+                "In this case requests from 1.2.3.4 e 1.2.3.5 are realiable.");
         property.setDefaultValue("");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
         property.setName(FORCE_WAUTHN_FOR_HTTP_HEADER);
-        property.setLabel("Exige U2F pelo Header");
-        property.setHelpText("O U2F é exigido se um header do request HTTP atende um determinado padrão.");
+        property.setLabel("Requires Webauthn by Header");
+        property.setHelpText("Webauthn is required if a HTTP header has a specifc pattern.");
         property.setDefaultValue("");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
         property.setType(LIST_TYPE);
         property.setName(DEFAULT_WAUTHN_OUTCOME);
-        property.setLabel("Tratamento default");
+        property.setLabel("Default treatment");
         property.setOptions(asList(SKIP, FORCE));
-        property.setHelpText("O que fazer se nenhuma regra anterior é usada.");
+        property.setHelpText("What to do if no previous rule is used.");
         configProperties.add(property);
+
+        ////// advanced options webauthn
+
+        property = new ProviderConfigProperty();
+        property.setType(LIST_TYPE);
+        property.setName(CONVEYANCE_PREFERENCE);
+        property.setLabel("Conveyance Preference");
+        property.setOptions(asList("none", "indirect", "direct"));
+        property.setHelpText("See webauthn reference.");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setType(LIST_TYPE);
+        property.setName(USER_VERIFICATION);
+        property.setLabel("User Verification");
+        property.setOptions(asList("none", "required", "preferred", "discouraged"));
+        property.setHelpText("See webauthn reference.");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setType(LIST_TYPE);
+        property.setName(ATTACHMENT_TYPE);
+        property.setLabel("Attachment Type");
+        property.setOptions(asList("none", "platform", "cross-platform"));
+        property.setHelpText("See webauthn reference.");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setType(BOOLEAN_TYPE);
+        property.setName(EXCLUDE_CREDENTIALS);
+        property.setLabel("Exclude Credentials");
+        property.setHelpText("See webauthn reference.");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setType(BOOLEAN_TYPE);
+        property.setName(REQUIRE_RESIDENT_KEY);
+        property.setLabel("require ResidentKey");
+        property.setHelpText("See webauthn reference.");
+        configProperties.add(property);
+
 
 //////////////////////
 

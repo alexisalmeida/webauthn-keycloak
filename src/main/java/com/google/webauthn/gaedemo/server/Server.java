@@ -29,9 +29,7 @@ import com.google.webauthn.gaedemo.storage.SessionData;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.credential.CredentialModel;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.UserCredentialModel;
-import org.keycloak.models.UserModel;
+import org.keycloak.models.*;
 
 import java.security.PublicKey;
 import java.util.*;
@@ -40,15 +38,17 @@ import java.util.logging.Logger;
 import br.com.experimental.keycloak.authenticator.WebauthnCredentialProvider;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
+//import static br.com.experimental.keycloak.authenticator.WebauthnLoginFactory.PROVIDER_ID;
+
 public abstract class Server {
 
     private static final Logger Log = Logger.getLogger(Server.class.getName());
 
-    public static final String U2F_SESSION_DATA = "u2f-session-data";
+    private static final String U2F_SESSION_DATA = "u2f-session-data";
 
-    public static void verifySessionAndChallenge(AuthenticatorResponse assertionResponse,
-                                                 AuthenticationSessionModel authenticationSession,
-                                                 String sessionId) throws ResponseException {
+    static void verifySessionAndChallenge(AuthenticatorResponse assertionResponse,
+                                          AuthenticationSessionModel authenticationSession,
+                                          String sessionId) throws ResponseException {
         Log.info("-- Verifying provided session and challenge data --");
         // TODO: when it's calling from an Android application via Endpoints API, the session ID
         // is temporarily null for now.
@@ -69,8 +69,8 @@ public abstract class Server {
         Log.info("Successfully verified session and challenge data");
     }
 
-    public static CredentialModel validateAndFindCredential(PublicKeyCredential cred, AuthenticationFlowContext contexto,
-                                                            String sessionId) throws ResponseException {
+    private static CredentialModel validateAndFindCredential(PublicKeyCredential cred, AuthenticationFlowContext contexto,
+                                                             String sessionId) throws ResponseException {
         if (!(cred.getResponse() instanceof AuthenticatorAssertionResponse)) {
             throw new ResponseException("Invalid authenticator response");
         }
@@ -114,10 +114,9 @@ public abstract class Server {
 
     /**
      * @param cred
-
      * @throws Exception
      */
-    public static void verifyAssertion(PublicKeyCredential cred, CredentialModel savedCredential) throws Exception {
+    private static void verifyAssertion(PublicKeyCredential cred, CredentialModel savedCredential) throws Exception {
         AuthenticatorAssertionResponse assertionResponse =
                 (AuthenticatorAssertionResponse) cred.getResponse();
 
@@ -174,7 +173,7 @@ public abstract class Server {
         Log.info("Signature verified");
     }
 
-    public static JsonObject startRegistration(RequiredActionContext contexto)
+    public static JsonObject startRegistration(RequiredActionContext contexto, AdvancedOptions advancedOptions)
             throws Exception {
 
         Log.info("*** Start Registration ***");
@@ -194,12 +193,8 @@ public abstract class Server {
 
 
         //TODO get advanced configuration from provider config
-            /*
-            String hasAdvanced = context.getHttpRequest().getFormParameters().getFirst("advanced");
-            if (hasAdvanced.equals("true")) {
-                parseAdvancedOptions(context.getHttpRequest().getFormParameters().getFirst("advancedOptions"), options);
-            }
-            */
+
+        parseAdvancedOptions(contexto, advancedOptions, options);
 
         SessionData session = new SessionData(options.challenge, rpId);
 
@@ -213,12 +208,12 @@ public abstract class Server {
 
     }
 
-    public static PublicKeyCredential finishRegistration(RequiredActionContext contexto,
-                                                         String data, String session)
+    public static void finishRegistration(RequiredActionContext contexto,
+                                          String data, String session)
             throws Exception {
         String credentialId = null;
         String type = null;
-        JsonElement makeCredentialResponse = null;
+        JsonElement makeCredentialResponse;
         String currentUser = contexto.getUser().getUsername();
 
         Log.info("*** Finish Registration ***");
@@ -243,7 +238,7 @@ public abstract class Server {
             throw new Exception("Input not valid json");
         }
 
-        AuthenticatorAttestationResponse attestation = null;
+        AuthenticatorAttestationResponse attestation;
         try {
             attestation = new AuthenticatorAttestationResponse(makeCredentialResponse);
         } catch (ResponseException e) {
@@ -252,6 +247,9 @@ public abstract class Server {
 
         // Recoding of credential ID is needed, because the ID from HTTP servlet request doesn't support
         // padding.
+        if (credentialId==null) {
+            throw new Exception("Input not valid json");
+        }
         String credentialIdRecoded = BaseEncoding.base64Url().encode(
                 BaseEncoding.base64Url().decode(credentialId));
 
@@ -260,15 +258,13 @@ public abstract class Server {
 
         String host = contexto.getActionUrl().getHost();
         String rpId = Iterables.get(Splitter.on(':').split(host), 0);
-        String domain = rpId; // contexto.getActionUrl().getHost();
 
         Log.info("host: " + host);
         Log.info("rpId: " + rpId);
-        Log.info("domain: " + domain);
 
         switch (cred.getAttestationType()) {
             case FIDOU2F:
-                U2fServer.registerCredential(contexto, cred, currentUser, session, domain, rpId);
+                U2fServer.registerCredential(contexto, cred, currentUser, session, rpId, rpId);
                 break;
             case ANDROIDSAFETYNET:
                 AndroidSafetyNetServer.registerCredential(contexto, cred, currentUser, session, rpId);
@@ -288,55 +284,48 @@ public abstract class Server {
         Log.info("stored credential: " + cred.encode());
 
         contexto.getSession().userCredentialManager().updateCredential(contexto.getRealm(), contexto.getUser(), credentials);
-
-
-        return cred;
     }
 
-
-    private void parseAdvancedOptions(RequiredActionContext contexto, String jsonString, PublicKeyCredentialCreationOptions options) {
+    private static void parseAdvancedOptions(RequiredActionContext contexto, AdvancedOptions advancedOptions,
+                                      PublicKeyCredentialCreationOptions options) {
         RealmModel realm = contexto.getRealm();
         UserModel user = contexto.getUser();
-        JsonElement jsonElement = new JsonParser().parse(jsonString);
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        Set<Map.Entry<String, JsonElement>> entries = jsonObject.entrySet();
 
-        boolean rk = false;
-        boolean excludeCredentials = false;
+        boolean rk;
+        boolean excludeCredentials;
         UserVerificationRequirement uv = null;
         AuthenticatorAttachment attachment = null;
-        for (Map.Entry<String, JsonElement> entry : entries) {
-            if (entry.getKey().equals("requireResidentKey")) {
-                rk = entry.getValue().getAsBoolean();
-            } else if (entry.getKey().equals("excludeCredentials")) {
-                excludeCredentials = entry.getValue().getAsBoolean();
 
-                if (excludeCredentials) {
-                    List<PublicKeyCredentialDescriptor> credentials = new ArrayList<>();
+        rk = advancedOptions.getRequireResidentKey();
+        excludeCredentials = advancedOptions.getExcludeCredentials();
+        if (excludeCredentials) {
+            List<PublicKeyCredentialDescriptor> credentials = new ArrayList<>();
 
-                    List<CredentialModel> savedCreds = contexto.getSession().userCredentialManager()
-                            .getStoredCredentialsByType(realm, user, WebauthnCredentialProvider.TYPE);
+            List<CredentialModel> savedCreds = contexto.getSession().userCredentialManager()
+                    .getStoredCredentialsByType(realm, user, WebauthnCredentialProvider.TYPE);
 
-                    for (CredentialModel c : savedCreds) {
-                        credentials.add(convertCredentialToCredentialDescriptor(c));
-                    }
-                    options.setExcludeCredentials(credentials);
-                }
-            } else if (entry.getKey().equals("userVerification")) {
-                uv = UserVerificationRequirement.decode(entry.getValue().getAsString());
-            } else if (entry.getKey().equals("authenticatorAttachment")) {
-                attachment = AuthenticatorAttachment.decode(entry.getValue().getAsString());
-            } else if (entry.getKey().equals("attestationConveyancePreference")) {
-                AttestationConveyancePreference conveyance =
-                        AttestationConveyancePreference.decode(entry.getValue().getAsString());
-                options.setAttestationConveyancePreference(conveyance);
+            for (CredentialModel c : savedCreds) {
+                credentials.add(convertCredentialToCredentialDescriptor(c));
             }
+            options.setExcludeCredentials(credentials);
         }
+
+        if (!advancedOptions.getUserVerification().equalsIgnoreCase("none")) {
+            uv = UserVerificationRequirement.decode(advancedOptions.getUserVerification());
+        }
+
+        if (!advancedOptions.getAttachmentType().equalsIgnoreCase("none")) {
+            attachment = AuthenticatorAttachment.decode(advancedOptions.getAttachmentType());
+        }
+
+        AttestationConveyancePreference conveyance =
+                        AttestationConveyancePreference.decode(advancedOptions.getConveyancePreference());
+        options.setAttestationConveyancePreference(conveyance);
 
         options.setCriteria(new AuthenticatorSelectionCriteria(attachment, rk, uv));
     }
 
-    private PublicKeyCredentialDescriptor convertCredentialToCredentialDescriptor(CredentialModel c) {
+    private static PublicKeyCredentialDescriptor convertCredentialToCredentialDescriptor(CredentialModel c) {
         PublicKeyCredentialType type = PublicKeyCredentialType.PUBLIC_KEY;
         byte[] id = c.getId().getBytes();
 
@@ -385,7 +374,7 @@ public abstract class Server {
         Log.info("*** Finish Assertion ***");
         String credentialId = null;
         String type = null;
-        JsonElement assertionJson = null;
+        JsonElement assertionJson;
 
         try {
             JsonObject json = new JsonParser().parse(data).getAsJsonObject();
@@ -409,11 +398,15 @@ public abstract class Server {
             throw new Exception("Input not valid json");
         }
 
-        AuthenticatorAssertionResponse assertion = null;
+        AuthenticatorAssertionResponse assertion;
         try {
             assertion = new AuthenticatorAssertionResponse(assertionJson);
         } catch (ResponseException e) {
             throw new Exception(e.toString());
+        }
+
+        if (credentialId==null) {
+            throw new Exception("Input not valid json");
         }
 
         // Recoding of credential ID is needed, because the ID from HTTP servlet request doesn't support
@@ -435,4 +428,6 @@ public abstract class Server {
 
         return  savedCredential;
     }
+
+
 }
