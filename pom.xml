@@ -32,23 +32,21 @@
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
             <version>[4.6.0,)</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-services</artifactId>
             <version>${keycloak.version}</version>
-<!--            <version>${keycloak.version}</version>
-            <systemPath>${keycloak.path}/modules/system/layers/keycloak/org/keycloak/keycloak-services/main/keycloak-services-${keycloak.version}.jar</systemPath>
-            <scope>system</scope>
-            -->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-common</artifactId>
             <version>${keycloak.version}</version>
-            <!--<scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -62,40 +60,28 @@
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-server-spi-private</artifactId>
             <version>${keycloak.version}</version>
-            <!--
-            <systemPath>${keycloak.path}/modules/system/layers/keycloak/org/keycloak/keycloak-server-spi-private/main/keycloak-server-spi-private-${keycloak.version}.jar</systemPath>
-            <scope>system</scope>
-            -->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-server-spi</artifactId>
             <version>${keycloak.version}</version>
-            <!--
-            <systemPath>${keycloak.path}/modules/system/layers/keycloak/org/keycloak/keycloak-server-spi/main/keycloak-server-spi-${keycloak.version}.jar</systemPath>
-            <scope>system</scope>
-            -->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
             <version>2.0</version>
-            <!--
-            <systemPath>${keycloak.path}/modules/system/layers/base/javax/ws/rs/api/main/jboss-jaxrs-api_2.0_spec-1.0.0.Final.jar</systemPath>
-            <scope>system</scope>
-            -->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxrs</artifactId>
             <version>${resteasy.version}</version>
-            <!--
-            <systemPath>${keycloak.path}/modules/system/layers/base/org/jboss/resteasy/resteasy-jaxrs/main/resteasy-jaxrs-${resteasy.version}.jar</systemPath>
-            <scope>system</scope>
-            -->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -128,21 +114,11 @@
             <version>${appengine.sdk.version}</version>
         </dependency>
 
-
         <dependency>
             <groupId>org.bitbucket.b_c</groupId>
             <artifactId>jose4j</artifactId>
             <version>0.4.1</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.yubico/u2flib-server-attestation -->
-        <!--
-        <dependency>
-            <groupId>com.yubico</groupId>
-            <artifactId>u2flib-server-attestation</artifactId>
-            <version>0.19.0</version>
-            <scope>provided</scope>
-        </dependency>
-        -->
 
     </dependencies>
 
