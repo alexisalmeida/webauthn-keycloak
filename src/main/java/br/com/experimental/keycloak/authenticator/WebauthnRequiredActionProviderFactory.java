@@ -28,7 +28,7 @@ import org.keycloak.models.KeycloakSessionFactory;
  */
 public class WebauthnRequiredActionProviderFactory implements RequiredActionFactory {
 
-    public static final String ID = "caixa-u2f-register";
+    static final String ID = "webauthn-register";
 
     @Override
     public RequiredActionProvider create(KeycloakSession session) {
@@ -37,7 +37,7 @@ public class WebauthnRequiredActionProviderFactory implements RequiredActionFact
 
     @Override
     public String getDisplayText() {
-        return "Registro U2F";
+        return "Webauthn Register";
     }
 
     @Override

@@ -17,25 +17,24 @@ import static org.keycloak.provider.ProviderConfigProperty.STRING_TYPE;
 
 public class WebauthnLoginFactory implements AuthenticatorFactory {
 
-    Logger logger = Logger.getLogger(this.getClass());
+    private Logger logger = Logger.getLogger(this.getClass());
 
-    public static final String PROVIDER_ID = "caixa-login-u2f";
+    static final String PROVIDER_ID = "webauthn-login";
     private final WebauthnLogin SINGLETON = new WebauthnLogin();
 
-    public static final String SKIP = "skip";
-    public static final String FORCE = "force";
-    public static final String U2F_CONTROL_USER_ATTRIBUTE = "u2fControlAttribute";
-    public static final String SKIP_U2F_ROLE = "skipU2fRole";
-    public static final String FORCE_U2F_ROLE = "forceU2fRole";
-    public static final String SKIP_U2F_FOR_HTTP_HEADER = "noU2fRequiredForHeaderPattern";
-    public static final String FORCE_U2F_FOR_HTTP_HEADER = "forceU2fForHeaderPattern";
-    public static final String DEFAULT_U2F_OUTCOME = "defaultU2fOutcome";
-    public static final String FORCE_U2F_FOR_CLIENT = "forceU2fForClient";
-    public static final String FORCE_U2F_FOR_CLIENT_EXCEPTION = "forceU2fClientException";
+    static final String SKIP = "skip";
+    static final String FORCE = "force";
+    static final String WAUTHN_CONTROL_USER_ATTRIBUTE = "u2fControlAttribute";
+    static final String FORCE_WAUTHN_ROLE = "forceU2fRole";
+    static final String SKIP_WAUTHN_FOR_HTTP_HEADER = "noU2fRequiredForHeaderPattern";
+    static final String FORCE_WAUTHN_FOR_HTTP_HEADER = "forceU2fForHeaderPattern";
+    static final String DEFAULT_WAUTHN_OUTCOME = "defaultU2fOutcome";
+    static final String FORCE_WAUTHN_FOR_CLIENT = "forceU2fForClient";
+    static final String FORCE_WAUTHN_FOR_CLIENT_EXCEPTION = "forceU2fClientException";
 
 
-    private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
-    public static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
+    private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
+    private static final AuthenticationExecutionModel.Requirement[] REQUIREMENT_CHOICES = {
             AuthenticationExecutionModel.Requirement.REQUIRED,
             AuthenticationExecutionModel.Requirement.OPTIONAL,
             AuthenticationExecutionModel.Requirement.DISABLED};
@@ -47,24 +46,24 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
-        property.setName(FORCE_U2F_FOR_CLIENT);
-        property.setLabel("U2F para os clientes");
-        property.setHelpText("O U2F será exigido para os clientes da lista (separado por vírgula). " +
-                "Use * para todos os clientes. Caso queira omitir um cliente específico, " +
-                "prfixe-o com -.");
+        property.setName(FORCE_WAUTHN_FOR_CLIENT);
+        property.setLabel("Reaquire Webauthn for clients");
+        property.setHelpText("Webauthn will be required for clients in the list (comma separated). " +
+                "Use * for all clients. " +
+                "If you want to omit a specific client, please enter it preceded by a \"-\" ");
         property.setDefaultValue("");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
-        property.setName(FORCE_U2F_FOR_CLIENT_EXCEPTION);
+        property.setName(FORCE_WAUTHN_FOR_CLIENT_EXCEPTION);
         property.setLabel("U2F exceção para clientes");
         property.setHelpText("O U2F não será exigido para os clientes da lista (separado por vírgula).");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
-        property.setName(U2F_CONTROL_USER_ATTRIBUTE);
+        property.setName(WAUTHN_CONTROL_USER_ATTRIBUTE);
         property.setLabel("Atributo do Usuário");
         property.setHelpText("O nome do atributo que controla o uso do U2F. " +
                 "Se o valor do atributo é 'force', então o U2F é exigido. " +
@@ -73,7 +72,7 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
-        property.setName(FORCE_U2F_ROLE);
+        property.setName(FORCE_WAUTHN_ROLE);
         property.setLabel("U2F para as Roles");
         property.setHelpText("O U2F será exigido para as Roles listadas. Use * para todas as Roles." +
                 "Caso deseje excluir uma role, prefixe-a com -.");
@@ -81,7 +80,7 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
-        property.setName(SKIP_U2F_FOR_HTTP_HEADER);
+        property.setName(SKIP_WAUTHN_FOR_HTTP_HEADER);
         property.setLabel("Dispensa U2F pelo Header");
         property.setHelpText("O U2F é dispensado se um header do request HTTP atende um determinado padrão." +
                 "Pode ser usado para especificar redes confiáveis via: X-Forwarded-Host: (1.2.3.4|1.2.3.5)." +
@@ -91,7 +90,7 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
 
         property = new ProviderConfigProperty();
         property.setType(STRING_TYPE);
-        property.setName(FORCE_U2F_FOR_HTTP_HEADER);
+        property.setName(FORCE_WAUTHN_FOR_HTTP_HEADER);
         property.setLabel("Exige U2F pelo Header");
         property.setHelpText("O U2F é exigido se um header do request HTTP atende um determinado padrão.");
         property.setDefaultValue("");
@@ -99,7 +98,7 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
 
         property = new ProviderConfigProperty();
         property.setType(LIST_TYPE);
-        property.setName(DEFAULT_U2F_OUTCOME);
+        property.setName(DEFAULT_WAUTHN_OUTCOME);
         property.setLabel("Tratamento default");
         property.setOptions(asList(SKIP, FORCE));
         property.setHelpText("O que fazer se nenhuma regra anterior é usada.");
@@ -114,7 +113,7 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
     }
 
     public Authenticator create(KeycloakSession keycloakSession) {
-        logger.debug("Criando Authenticator Caixa Config Realm");
+        logger.debug("Creating Webauthn Authenticator");
         return SINGLETON;
     }
 
@@ -123,7 +122,7 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
     }
 
     public void init(Config.Scope scope) {
-        logger.info("Registrando Factory do Login U2F");
+        logger.info("Registering Factory for Webauthn Login");
     }
 
     public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
@@ -139,11 +138,11 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
     }
 
     public String getDisplayType() {
-        return "Login U2F";
+        return "Webauthn Login";
     }
 
     public String getReferenceCategory() {
-        return "Login U2F";
+        return "Webauthn Login";
     }
 
     public boolean isConfigurable() {
@@ -151,7 +150,7 @@ public class WebauthnLoginFactory implements AuthenticatorFactory {
     }
 
     public String getHelpText() {
-        return "Login U2F";
+        return "Webauthn Login";
     }
 
     public List<ProviderConfigProperty> getConfigProperties() {

@@ -34,7 +34,7 @@ public class WebauthnRequiredActionProvider implements RequiredActionProvider {
 
     private static final Logger logger = Logger.getLogger(WebauthnRequiredActionProvider.class);
 
-    private static final String atrib2f_fido_register = "2f_fido_reg";
+    private static final String atrib_webauthn_register = "webauthn_reg";
 
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
@@ -51,7 +51,7 @@ public class WebauthnRequiredActionProvider implements RequiredActionProvider {
                     .setAttribute("url", new UrlBean(context.getRealm(), null,
                             context.getSession().getContext().getUri().getBaseUri(), context.getActionUrl()))
                     .setAttribute("request", optionsJson.toString())
-                    .createForm("fido-webauthn-register.ftl");
+                    .createForm("register-webauthn.ftl");
 
             context.challenge(challenge);
         } catch (Exception e) {
@@ -71,7 +71,7 @@ public class WebauthnRequiredActionProvider implements RequiredActionProvider {
 
             Server.finishRegistration(context, data, session);
 
-            context.getAuthenticationSession().setUserSessionNote(atrib2f_fido_register, "true");
+            context.getAuthenticationSession().setUserSessionNote(atrib_webauthn_register, "true");
 
             context.success();
         } catch (Exception e) {

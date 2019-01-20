@@ -14,72 +14,65 @@ import java.util.regex.Pattern;
 
 import org.keycloak.models.utils.RoleUtils;
 
-import static br.com.experimental.keycloak.authenticator.WebauthnLogin.U2fDecision.ABSTAIN;
-import static br.com.experimental.keycloak.authenticator.WebauthnLogin.U2fDecision.SHOW_U2F;
-import static br.com.experimental.keycloak.authenticator.WebauthnLogin.U2fDecision.SKIP_U2F;
+import static br.com.experimental.keycloak.authenticator.WebauthnLogin.WebauthnDecision.ABSTAIN;
+import static br.com.experimental.keycloak.authenticator.WebauthnLogin.WebauthnDecision.SHOW_WAUTHN;
+import static br.com.experimental.keycloak.authenticator.WebauthnLogin.WebauthnDecision.SKIP_WAUTHN;
 import static br.com.experimental.keycloak.authenticator.WebauthnLoginFactory.*;
 import static org.keycloak.models.utils.KeycloakModelUtils.getRoleFromString;
 
 public class WebauthnLogin implements Authenticator {
 
-    Logger logger = Logger.getLogger(this.getClass());
+    private Logger logger = Logger.getLogger(this.getClass());
 
-    private static final String atrib2f_fido_login = "2f_fido_login";
+    private static final String atrib_webauthn_login = "webauthn_login";
 
     private AuthenticationFlowContext context;
     private String clientId="";
     private AuthenticationFlowContext contexto;
     private KeycloakSession session;
 
-    enum U2fDecision {
-        SKIP_U2F, SHOW_U2F, ABSTAIN
+    enum WebauthnDecision {
+        SKIP_WAUTHN, SHOW_WAUTHN, ABSTAIN
     }
 
     public void authenticate(AuthenticationFlowContext context) {
-        logger.info("Authenticate");
-
         this.contexto = context;
         this.session = context.getSession();
         Map<String, String> config = context.getAuthenticatorConfig().getConfig();
 
-        if (context != null) {
-            try {
+        try {
 
-                RealmModel realm = context.getRealm();
-                UserModel user = context.getUser();
+            RealmModel realm = context.getRealm();
+            UserModel user = context.getUser();
 
-                //Set<String> lista = contexto.getSession().userCredentialManager().getDisableableCredentialTypes(contexto.getRealm(),contexto.getUser());
-                boolean u2f = contexto.getSession().userCredentialManager().isConfiguredFor(realm, user, WebauthnCredentialProvider.TYPE);
+            boolean webauthn = contexto.getSession().userCredentialManager().isConfiguredFor(realm, user, WebauthnCredentialProvider.TYPE);
 
-                logger.info("authenticate - u2f: " + u2f);
+            if (webauthn) {
+                logger.info("Authenticate - User has Webauthn");
 
-                if (u2f) {
-                    logger.info("authenticate - Contem U2F");
-
-                    try {
-                        clientId = context.getSession().getContext().getClient().getClientId();
-                        logger.info("clientId: " + clientId);
+                try {
+                    clientId = context.getSession().getContext().getClient().getClientId();
+                    logger.info("clientId: " + clientId);
 
 
-                        if (config.containsKey(FORCE_U2F_FOR_CLIENT_EXCEPTION) && !config.get(FORCE_U2F_FOR_CLIENT_EXCEPTION).contains(clientId)) {
-                            logger.info("authenticate - SHOW_U2F - NOT EXCEPTION");
-                            showU2fForm(context);
-                            return;
-                        }
-
-                    } catch (Exception e) {
-                        if (e.getMessage()!=null)
-                            logger.info("authenticate - erro: " + e.getMessage());
-
-                        logger.info("authenticate - Erro ao obter clientId");
+                    if (config.containsKey(FORCE_WAUTHN_FOR_CLIENT_EXCEPTION) && !config.get(FORCE_WAUTHN_FOR_CLIENT_EXCEPTION).contains(clientId)) {
+                        logger.info("Authenticate - SHOW_WAUTHN - NOT EXCEPTION");
+                        showU2fForm(context);
                         return;
                     }
+
+                } catch (Exception e) {
+                    if (e.getMessage()!=null)
+                        logger.info("Authenticate - error: " + e.getMessage());
+
+                    logger.info("Authenticate - Error getting clientId");
+                    return;
                 }
             }
-            catch(Exception ex) {
-                logger.info("authenticate - Erro: " + ex.getMessage());
-                return;
-            }
+        }
+        catch(Exception ex) {
+            logger.info("Authenticate - Error: " + ex.getMessage());
+            return;
         }
 
         if (tryConcludeBasedOn(voteForClient(config), context)) {
@@ -107,51 +100,46 @@ public class WebauthnLogin implements Authenticator {
 
     }
 
-    private U2fDecision voteForClient(Map<String, String> config) {
+    private WebauthnDecision voteForClient(Map<String, String> config) {
 
         logger.info("voteForClient");
 
         try {
             clientId = this.session.getContext().getClient().getClientId();
-            logger.info("clientId: " + clientId);
         } catch (Exception e) {
             if (e.getMessage()!=null)
-                logger.info("voteForClient - erro: " + e.getMessage());
+                logger.info("voteForClient - error: " + e.getMessage());
 
-            logger.info("voteForClient - Erro ao obter clientId");
+            logger.info("voteForClient - Error getting clientId");
             return ABSTAIN;
         }
 
         if (clientId == null || clientId.equals("")) {
-            logger.info("voteForClient - clientId vazio!");
+            logger.info("voteForClient - clientId empty!");
             return ABSTAIN;
         }
 
 
-        if (!config.containsKey(FORCE_U2F_FOR_CLIENT)) {
+        if (!config.containsKey(FORCE_WAUTHN_FOR_CLIENT)) {
             return ABSTAIN;
         }
 
-        if (config.containsKey(FORCE_U2F_FOR_CLIENT) && config.get(FORCE_U2F_FOR_CLIENT).contains("-" + clientId)) {
-            return SKIP_U2F;
+        if (config.containsKey(FORCE_WAUTHN_FOR_CLIENT) && config.get(FORCE_WAUTHN_FOR_CLIENT).contains("-" + clientId)) {
+            return SKIP_WAUTHN;
         }
 
-        if (config.containsKey(FORCE_U2F_FOR_CLIENT) &&
-                (config.get(FORCE_U2F_FOR_CLIENT).contains(clientId) || config.get(FORCE_U2F_FOR_CLIENT).contains("*"))) {
-            if (!excecao(config.get(FORCE_U2F_FOR_CLIENT))) {
-                return SHOW_U2F;
+        if (config.containsKey(FORCE_WAUTHN_FOR_CLIENT) &&
+                (config.get(FORCE_WAUTHN_FOR_CLIENT).contains(clientId) || config.get(FORCE_WAUTHN_FOR_CLIENT).contains("*"))) {
+            if (!excecao(config.get(FORCE_WAUTHN_FOR_CLIENT))) {
+                return SHOW_WAUTHN;
             }
-
         }
-
 
         return ABSTAIN;
     }
 
     private boolean excecao(String clientes) {
-        logger.info("client: " + clientId + " " + clientes);
         if (!clientes.contains(clientId) || contexto==null) return false;
-        logger.info("client: " + clientId + " " + clientes);
 
         String lista[] = clientes.split(",");
 
@@ -160,38 +148,28 @@ public class WebauthnLogin implements Authenticator {
                 int p = c.indexOf(":");
                 if (p<0) return false;
 
-                logger.info("IP: " + contexto.getSession().getContext().getConnection().getRemoteAddr());
                 String ipConexao = contexto.getSession().getContext().getConnection().getRemoteAddr();
 
-
                 String ips = c.substring(p+1);
-
-                String listaIps[] = ips.split(";");
-                logger.info("lista: " + listaIps);
-
-                listaIps = ips.split("\\|");
-                logger.info("lista: " + listaIps);
+                String listaIps[] = ips.split("\\|");
 
                 for (String ip: listaIps) {
-                    logger.info("comp: " + ip + "=" + ipConexao.substring(0,ip.length()));
                     if (ip.equals(ipConexao.substring(0,ip.length()))) {
-                        logger.info("achou");
                         return true;
                     }
                 }
-
             }
         }
         return false;
     }
 
-    private U2fDecision voteForUserU2fControlAttribute(UserModel user, Map<String, String> config) {
+    private WebauthnDecision voteForUserU2fControlAttribute(UserModel user, Map<String, String> config) {
 
-        if (!config.containsKey(U2F_CONTROL_USER_ATTRIBUTE)) {
+        if (!config.containsKey(WAUTHN_CONTROL_USER_ATTRIBUTE)) {
             return ABSTAIN;
         }
 
-        String attributeName = config.get(U2F_CONTROL_USER_ATTRIBUTE);
+        String attributeName = config.get(WAUTHN_CONTROL_USER_ATTRIBUTE);
         if (attributeName == null) {
             return ABSTAIN;
         }
@@ -206,33 +184,33 @@ public class WebauthnLogin implements Authenticator {
 
         switch (value) {
             case SKIP:
-                return SKIP_U2F;
+                return SKIP_WAUTHN;
             case FORCE:
-                return SHOW_U2F;
+                return SHOW_WAUTHN;
             default:
                 return ABSTAIN;
         }
     }
 
-    private U2fDecision voteForUserRole(RealmModel realm, UserModel user, Map<String, String> config) {
+    private WebauthnDecision voteForUserRole(RealmModel realm, UserModel user, Map<String, String> config) {
 
-        if (!config.containsKey(FORCE_U2F_ROLE)) {
+        if (!config.containsKey(FORCE_WAUTHN_ROLE)) {
             return ABSTAIN;
         }
 
-        String[] lista = config.get(FORCE_U2F_ROLE).split(",");
+        String[] lista = config.get(FORCE_WAUTHN_ROLE).split(",");
 
         for (String s: lista) {
             if (s.substring(0,1).equals("-")) {
                 if (userHasRole(realm, user, s.substring(1))) {
-                    return SKIP_U2F;
+                    return SKIP_WAUTHN;
                 }
             }
         }
 
         for (String s: lista) {
             if (s.equals("*") || userHasRole(realm, user, s)) {
-                return SHOW_U2F;
+                return SHOW_WAUTHN;
             }
         }
 
@@ -250,19 +228,19 @@ public class WebauthnLogin implements Authenticator {
         return RoleUtils.hasRole(user.getRoleMappings(), role);
     }
 
-    private U2fDecision voteForHttpHeaderMatchesPattern(MultivaluedMap<String, String> requestHeaders, Map<String, String> config) {
+    private WebauthnDecision voteForHttpHeaderMatchesPattern(MultivaluedMap<String, String> requestHeaders, Map<String, String> config) {
 
-        if (!config.containsKey(FORCE_U2F_FOR_HTTP_HEADER) && !config.containsKey(SKIP_U2F_FOR_HTTP_HEADER)) {
+        if (!config.containsKey(FORCE_WAUTHN_FOR_HTTP_HEADER) && !config.containsKey(SKIP_WAUTHN_FOR_HTTP_HEADER)) {
             return ABSTAIN;
         }
 
         //Inverted to allow white-lists, e.g. for specifying trusted remote hosts: X-Forwarded-Host: (1.2.3.4|1.2.3.5)
-        if (containsMatchingRequestHeader(requestHeaders, config.get(SKIP_U2F_FOR_HTTP_HEADER))) {
-            return SKIP_U2F;
+        if (containsMatchingRequestHeader(requestHeaders, config.get(SKIP_WAUTHN_FOR_HTTP_HEADER))) {
+            return SKIP_WAUTHN;
         }
 
-        if (containsMatchingRequestHeader(requestHeaders, config.get(FORCE_U2F_FOR_HTTP_HEADER))) {
-            return SHOW_U2F;
+        if (containsMatchingRequestHeader(requestHeaders, config.get(FORCE_WAUTHN_FOR_HTTP_HEADER))) {
+            return SHOW_WAUTHN;
         }
 
         return ABSTAIN;
@@ -295,31 +273,31 @@ public class WebauthnLogin implements Authenticator {
         return false;
     }
 
-    private U2fDecision voteForDefaultFallback(Map<String, String> config) {
+    private WebauthnDecision voteForDefaultFallback(Map<String, String> config) {
 
-        if (!config.containsKey(DEFAULT_U2F_OUTCOME)) {
+        if (!config.containsKey(DEFAULT_WAUTHN_OUTCOME)) {
             return ABSTAIN;
         }
 
-        switch (config.get(DEFAULT_U2F_OUTCOME)) {
+        switch (config.get(DEFAULT_WAUTHN_OUTCOME)) {
             case SKIP:
-                return SKIP_U2F;
+                return SKIP_WAUTHN;
             case FORCE:
-                return SHOW_U2F;
+                return SHOW_WAUTHN;
             default:
                 return ABSTAIN;
         }
     }
 
-    private boolean tryConcludeBasedOn(U2fDecision state, AuthenticationFlowContext context) {
+    private boolean tryConcludeBasedOn(WebauthnDecision state, AuthenticationFlowContext context) {
 
         switch (state) {
 
-            case SHOW_U2F:
+            case SHOW_WAUTHN:
                 showU2fForm(context);
                 return true;
 
-            case SKIP_U2F:
+            case SKIP_WAUTHN:
                 context.success();
                 return true;
 
@@ -336,7 +314,7 @@ public class WebauthnLogin implements Authenticator {
 
             Response response = context.form()
                     .setAttribute("request", assertionJson.toString())
-                    .createForm("fido-webauthn-login.ftl");
+                    .createForm("login-webauthn.ftl");
 
             context.challenge(response);
         } catch (Exception e) {
@@ -346,12 +324,8 @@ public class WebauthnLogin implements Authenticator {
 
     private boolean isRequiredU2f(KeycloakSession session, RealmModel realm, UserModel user) {
 
-        logger.info("isU2fRequired");
         MultivaluedMap<String, String> requestHeaders = session.getContext().getRequestHeaders().getRequestHeaders();
-
         AuthenticatorConfigModel configModel = getConfigU2f(session, PROVIDER_ID);
-
-        logger.info("configModel: " + configModel);
 
         if (configModel==null) {
             return false;
@@ -359,66 +333,53 @@ public class WebauthnLogin implements Authenticator {
 
         this.session = session;
 
-        U2fDecision state = ABSTAIN;
+        WebauthnDecision state;
 
         state = voteForClient(configModel.getConfig());
 
         logger.info("state: " + state);
-        if (state == SKIP_U2F) {
+        if (state == SKIP_WAUTHN) {
             return false;
-        } else if (state == SHOW_U2F) {
+        } else if (state == SHOW_WAUTHN) {
             return true;
         }
 
         state = voteForUserU2fControlAttribute(user, configModel.getConfig());
-        if (state == SKIP_U2F) {
+        if (state == SKIP_WAUTHN) {
             return false;
-        } else if (state == SHOW_U2F) {
+        } else if (state == SHOW_WAUTHN) {
             return true;
         }
 
         state = voteForUserRole(realm, user, configModel.getConfig());
-        if (state == SKIP_U2F) {
+        if (state == SKIP_WAUTHN) {
             return false;
-        } else if (state == SHOW_U2F) {
+        } else if (state == SHOW_WAUTHN) {
             return true;
         }
 
         state = voteForHttpHeaderMatchesPattern(requestHeaders, configModel.getConfig());
-        if (state == SKIP_U2F) {
+        if (state == SKIP_WAUTHN) {
             return false;
-        } else if (state == SHOW_U2F) {
+        } else if (state == SHOW_WAUTHN) {
             return true;
         }
 
-        if (configModel.getConfig().get(DEFAULT_U2F_OUTCOME) != null
-                && configModel.getConfig().get(DEFAULT_U2F_OUTCOME).equals(FORCE)) {
-            return true;
-        }
+        return configModel.getConfig().get(DEFAULT_WAUTHN_OUTCOME) != null
+                && configModel.getConfig().get(DEFAULT_WAUTHN_OUTCOME).equals(FORCE);
 
-        return false;
     }
 
-    AuthenticatorConfigModel getConfigU2f(KeycloakSession session, String providerId) {
-        logger.info("getConfig: " + session + " " + providerId);
-
+    private AuthenticatorConfigModel getConfigU2f(KeycloakSession session, String providerId) {
         AuthenticatorConfigModel configModel = null;
+
         RealmModel realm = session.getContext().getRealm();
-
         String flowId = realm.getBrowserFlow().getId();
-
         List<AuthenticationExecutionModel> laem = realm.getAuthenticationExecutions(flowId);
 
         for (AuthenticationExecutionModel aem : laem) {
-
-            if (aem.getAuthenticator() != null) {
-                logger.info("getConfigU2f: ID: " + aem.getId() + " Nome: " + aem.getAuthenticator());
-            }
-
             if (aem.getAuthenticator() != null && aem.getAuthenticator().equals(providerId)) {
-
                 configModel = realm.getAuthenticatorConfigById(aem.getAuthenticatorConfig());
-                logger.info("achou config: " + configModel);
                 break;
             }
         }
@@ -426,11 +387,7 @@ public class WebauthnLogin implements Authenticator {
         return configModel;
     }
 
-
-
     public void action(AuthenticationFlowContext context) {
-
-
         try {
             MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
 
@@ -443,21 +400,14 @@ public class WebauthnLogin implements Authenticator {
                  context.success();
             } else {
                 CredentialModel savedCredential = Server.finishAssertion(context, data, session);
-
-                String handle = savedCredential.getId();
-
-                logger.info("handle: " + handle);
-
-                context.getAuthenticationSession().setUserSessionNote(atrib2f_fido_login, "true");
+                context.getAuthenticationSession().setUserSessionNote(atrib_webauthn_login, "true");
 
                 context.success();
-
             }
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-
     }
 
     public boolean requiresUser() {
@@ -473,25 +423,14 @@ public class WebauthnLogin implements Authenticator {
 
 
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
-        /*
-        if (!user.getRequiredActions().contains(WebauthnRequiredActionProviderFactory.ID)) {
-            user.addRequiredAction(WebauthnRequiredActionProviderFactory.ID);
-        }
-        */
-
-        logger.info("setRequired");
         if (!isRequiredU2f(session, realm, user)) {
-            //logger.info("remove");
             user.removeRequiredAction(WebauthnRequiredActionProviderFactory.ID);
         } else if (!user.getRequiredActions().contains(WebauthnRequiredActionProviderFactory.ID)) {
             user.addRequiredAction(WebauthnRequiredActionProviderFactory.ID);
         }
-
     }
-
 
     public void close() {
-        // Não utilizado
+        // Not used
     }
-
 }

@@ -40,25 +40,20 @@ public class WebauthnCredentialProvider implements CredentialProvider, Credentia
 
     private static final Logger logger = Logger.getLogger(WebauthnCredentialProvider.class);
 
-    public static final String TYPE = "u2fc";
+    public static final String TYPE = "wauthn";
 
     private KeycloakSession session;
 
-    public WebauthnCredentialProvider(KeycloakSession session) {
+    WebauthnCredentialProvider(KeycloakSession session) {
         this.session = session;
     }
 
     @Override
     public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
-        if (!supportsCredentialType(credentialType)) {
-            return false;
-        }
+        return supportsCredentialType(credentialType) &&
+                TYPE.equals(credentialType) &&
+                !session.userCredentialManager().getStoredCredentialsByType(realm, user, TYPE).isEmpty();
 
-        if (!TYPE.equals(credentialType)) {
-            return false;
-        }
-
-        return !session.userCredentialManager().getStoredCredentialsByType(realm, user, TYPE).isEmpty();
     }
 
     @Override

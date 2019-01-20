@@ -25,7 +25,7 @@ import org.keycloak.models.KeycloakSession;
  */
 public class WebauthnCredentialProviderFactory implements CredentialProviderFactory<OTPCredentialProvider> {
 
-    public static final String PROVIDER_ID="caixa-u2f-credential";
+    private static final String PROVIDER_ID="webauthn-credential";
 
     @Override
     public WebauthnCredentialProvider create(KeycloakSession session) {
