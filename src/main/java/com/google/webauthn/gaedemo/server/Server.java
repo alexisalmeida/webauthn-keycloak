@@ -112,10 +112,6 @@ public abstract class Server {
         return credential;
     }
 
-    /**
-     * @param cred
-     * @throws Exception
-     */
     private static void verifyAssertion(PublicKeyCredential cred, CredentialModel savedCredential) throws Exception {
         AuthenticatorAssertionResponse assertionResponse =
                 (AuthenticatorAssertionResponse) cred.getResponse();
