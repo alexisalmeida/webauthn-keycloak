@@ -6,4 +6,4 @@ https://github.com/stianst/keycloak-experimental/tree/master/fido-u2f and https:
 
 It's ready for Keycloak 3.4.3
 
-Please, remember register "Registro U2F" in "Authentication/Required Action" after starting Keycloak
+Please, remember register "webauthn" in "Authentication/Required Action" after starting Keycloak

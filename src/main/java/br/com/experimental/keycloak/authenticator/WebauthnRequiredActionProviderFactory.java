@@ -37,7 +37,7 @@ public class WebauthnRequiredActionProviderFactory implements RequiredActionFact
 
     @Override
     public String getDisplayText() {
-        return "Webauthn Register";
+        return "Webauthn";
     }
 
     @Override
